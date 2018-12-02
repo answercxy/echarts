@@ -1,3 +1,22 @@
+/*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
 /**
  * Tree data structure
  *
@@ -6,9 +25,9 @@
 
 import * as zrUtil from 'zrender/src/core/util';
 import Model from '../model/Model';
-import List from './List';
 import linkList from './helper/linkList';
-import completeDimensions from './helper/completeDimensions';
+import List from './List';
+import createDimensions from './helper/createDimensions';
 
 /**
  * @constructor module:echarts/data/Tree~TreeNode
@@ -384,7 +403,7 @@ Tree.prototype = {
      * @param {Function} cb
      * @param {Object}   [context]
      */
-    eachNode: function(options, cb, context) {
+    eachNode: function (options, cb, context) {
         this.root.eachNode(options, cb, context);
     },
 
@@ -484,8 +503,12 @@ Tree.createTree = function (dataRoot, hostModel, treeOptions) {
 
     tree.root.updateDepthAndHeight(0);
 
-    var dimensions = completeDimensions([{name: 'value'}], listData, {dimCount: dimMax});
-    var list = new List(dimensions, hostModel);
+    var dimensionsInfo = createDimensions(listData, {
+        coordDimensions: ['value'],
+        dimensionsCount: dimMax
+    });
+
+    var list = new List(dimensionsInfo, hostModel);
     list.initData(listData);
 
     linkList({

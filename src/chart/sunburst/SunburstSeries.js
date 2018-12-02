@@ -1,7 +1,26 @@
+/*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
 import * as zrUtil from 'zrender/src/core/util';
 import SeriesModel from '../../model/Series';
 import Tree from '../../data/Tree';
-import {wrapTreePathInfo} from '../treemap/helper';
+import {wrapTreePathInfo} from '../helper/treeHelper';
 
 export default SeriesModel.extend({
 
@@ -51,9 +70,7 @@ export default SeriesModel.extend({
     defaultOption: {
         zlevel: 0,
         z: 2,
-        legendHoverLink: true,
 
-        hoverAnimation: true,
         // 默认全局居中
         center: ['50%', '50%'],
         radius: [0, '75%'],
@@ -73,47 +90,64 @@ export default SeriesModel.extend({
         // 'ancestor', 'self'
         highlightPolicy: 'descendant',
 
+        // 'rootToNode', 'link', or false
+        nodeClick: 'rootToNode',
+
+        renderLabelForZeroData: false,
+
         label: {
-            normal: {
-                // could be: 'radial', 'tangential', or 'none'
-                rotate: 'radial',
-                show: true,
-                // could be 'inner', 'outside', 'left' or 'right'
-                // 'left' is for inner side of inside, and 'right' is for outter
-                // side for inside
-                position: 'inner',
-                padding: 5,
-                silent: true
-            },
+            // could be: 'radial', 'tangential', or 'none'
+            rotate: 'radial',
+            show: true,
+            opacity: 1,
+            // 'left' is for inner side of inside, and 'right' is for outter
+            // side for inside
+            align: 'center',
+            position: 'inside',
+            distance: 5,
+            silent: true,
             emphasis: {}
         },
         itemStyle: {
-            normal: {
-                borderWidth: 1,
-                borderColor: 'white'
-            },
+            borderWidth: 1,
+            borderColor: 'white',
+            borderType: 'solid',
+            shadowBlur: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.2)',
+            shadowOffsetX: 0,
+            shadowOffsetY: 0,
+            opacity: 1,
             emphasis: {},
             highlight: {
                 opacity: 1
             },
             downplay: {
-                opacity: 0.6
+                opacity: 0.9
             }
         },
 
         // Animation type canbe expansion, scale
         animationType: 'expansion',
         animationDuration: 1000,
-        animationUpdateDuration: 300,
-        animationEasing: 'sinusoidalInOut',
+        animationDurationUpdate: 500,
+        animationEasing: 'cubicOut',
 
         data: [],
 
         levels: [],
 
-        // null for not sorting,
-        // 'desc' and 'asc' for descend and ascendant order
-        sortOrder: 'desc'
+        /**
+         * Sort order.
+         *
+         * Valid values: 'desc', 'asc', null, or callback function.
+         * 'desc' and 'asc' for descend and ascendant order;
+         * null for not sorting;
+         * example of callback function:
+         * function(nodeA, nodeB) {
+         *     return nodeA.getValue() - nodeB.getValue();
+         * }
+         */
+        sort: 'desc'
     },
 
     getViewRoot: function () {
@@ -128,7 +162,7 @@ export default SeriesModel.extend({
             ? (this._viewRoot = viewRoot)
             : (viewRoot = this._viewRoot);
 
-        var root = this.getData().tree.root;
+        var root = this.getRawData().tree.root;
 
         if (!viewRoot
             || (viewRoot !== root && !root.contains(viewRoot))

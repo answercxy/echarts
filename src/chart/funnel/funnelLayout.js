@@ -1,3 +1,22 @@
+/*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
 import * as layout from '../../util/layout';
 import {parsePercent, linearMap} from '../../util/number';
 
@@ -11,7 +30,8 @@ function getViewRect(seriesModel, api) {
 }
 
 function getSortedIndices(data, sort) {
-    var valueArr = data.mapArray('value', function (val) {
+    var valueDim = data.mapDimension('value');
+    var valueArr = data.mapArray(valueDim, function (val) {
         return val;
     });
     var indices = [];
@@ -23,7 +43,8 @@ function getSortedIndices(data, sort) {
     // Add custom sortable function & none sortable opetion by "options.sort"
     if (typeof sort === 'function') {
         indices.sort(sort);
-    } else if (sort !== 'none') {
+    }
+    else if (sort !== 'none') {
         indices.sort(function (a, b) {
             return isAscending ? valueArr[a] - valueArr[b] : valueArr[b] - valueArr[a];
         });
@@ -34,16 +55,17 @@ function getSortedIndices(data, sort) {
 function labelLayout(data) {
     data.each(function (idx) {
         var itemModel = data.getItemModel(idx);
-        var labelModel = itemModel.getModel('label.normal');
+        var labelModel = itemModel.getModel('label');
         var labelPosition = labelModel.get('position');
 
-        var labelLineModel = itemModel.getModel('labelLine.normal');
+        var labelLineModel = itemModel.getModel('labelLine');
 
         var layout = data.getItemLayout(idx);
         var points = layout.points;
 
         var isLabelInside = labelPosition === 'inner'
-            || labelPosition === 'inside' || labelPosition === 'center';
+            || labelPosition === 'inside' || labelPosition === 'center'
+            || labelPosition === 'insideLeft' || labelPosition === 'insideRight';
 
         var textAlign;
         var textX;
@@ -51,9 +73,21 @@ function labelLayout(data) {
         var linePoints;
 
         if (isLabelInside) {
-            textX = (points[0][0] + points[1][0] + points[2][0] + points[3][0]) / 4;
-            textY = (points[0][1] + points[1][1] + points[2][1] + points[3][1]) / 4;
-            textAlign = 'center';
+            if (labelPosition === 'insideLeft') {
+                textX = (points[0][0] + points[3][0]) / 2 + 5;
+                textY = (points[0][1] + points[3][1]) / 2;
+                textAlign = 'left';
+            }
+            else if (labelPosition === 'insideRight') {
+                textX = (points[1][0] + points[2][0]) / 2 - 5;
+                textY = (points[1][1] + points[2][1]) / 2;
+                textAlign = 'right';
+            }
+            else {
+                textX = (points[0][0] + points[1][0] + points[2][0] + points[3][0]) / 4;
+                textY = (points[0][1] + points[1][1] + points[2][1] + points[3][1]) / 4;
+                textAlign = 'center';
+            }
             linePoints = [
                 [textX, textY], [textX, textY]
             ];
@@ -99,6 +133,7 @@ function labelLayout(data) {
 export default function (ecModel, api, payload) {
     ecModel.eachSeriesByType('funnel', function (seriesModel) {
         var data = seriesModel.getData();
+        var valueDim = data.mapDimension('value');
         var sort = seriesModel.get('sort');
         var viewRect = getViewRect(seriesModel, api);
         var indices = getSortedIndices(data, sort);
@@ -107,7 +142,7 @@ export default function (ecModel, api, payload) {
             parsePercent(seriesModel.get('minSize'), viewRect.width),
             parsePercent(seriesModel.get('maxSize'), viewRect.width)
         ];
-        var dataExtent = data.getDataExtent('value');
+        var dataExtent = data.getDataExtent(valueDim);
         var min = seriesModel.get('min');
         var max = seriesModel.get('max');
         if (min == null) {
@@ -125,7 +160,7 @@ export default function (ecModel, api, payload) {
 
         var getLinePoints = function (idx, offY) {
             // End point index is data.count() and we assign it 0
-            var val = data.get('value', idx) || 0;
+            var val = data.get(valueDim, idx) || 0;
             var itemWidth = linearMap(val, [min, max], sizeExtent, true);
             var x0;
             switch (funnelAlign) {
@@ -158,7 +193,7 @@ export default function (ecModel, api, payload) {
             var nextIdx = indices[i + 1];
 
             var itemModel = data.getItemModel(idx);
-            var height = itemModel.get('itemStyle.normal.height');
+            var height = itemModel.get('itemStyle.height');
             if (height == null) {
                 height = itemHeight;
             }
